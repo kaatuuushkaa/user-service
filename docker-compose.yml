@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_service
+    volumes:
+      - db_data:/var/lib/postgressql/data
+    ports:
+      - "5432:5432"
+
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      - db
+    volumes:
+      - ./migrations:/migrations
+    entrypoint: ["/bin/sh", "-c"]
+    command: > 
+     "sleep 5 && migrate -path=/migrations -database=postgres://user:password@db:5432/user_service?sslmode=disable up"
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=user_service
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data:
